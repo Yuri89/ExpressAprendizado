@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro de Usuários</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background-color: #f4f4f9;
+      color: #333;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    body.dark {
+      background-color: #333;
+      color: white;
+    }
+
+    nav {
+      background-color: #007BFF;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    nav h1 {
+      font-size: 1.5rem;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: white;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    .container.dark {
+      background-color: #444;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 0.5rem;
+    }
+
+    .btn:hover {
+      background-color: #0056b3;
+    }
+
+    .btn.red {
+      background-color: red;
+    }
+
+    .btn.red:hover {
+      background-color: darkred;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #007BFF;
+      color: white;
+    }
+
+    .table-controls {
+      margin: 1rem 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .table-controls button {
+      margin-right: 0.5rem;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 2rem;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      z-index: 1000;
+    }
+
+    .modal.active {
+      display: block;
+    }
+
+    .modal-header {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .modal-close {
+      background-color: red;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      float: right;
+    }
+
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
+
+    .overlay.active {
+      display: block;
+    }
+
+    .toast {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background-color: #28a745;
+      color: white;
+      padding: 10px;
+      border-radius: 4px;
+      display: none;
+      transition: opacity 0.5s;
+    }
+
+    .toast.error {
+      background-color: #dc3545;
+    }
+
+    .toast.active {
+      display: block;
+      opacity: 1;
+    }
+
+    .theme-toggle {
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.1rem;
+      padding: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <h1>Usuários Cadastro</h1>
+    <button class="theme-toggle" onclick="toggleTheme()">🌙 Mudar Tema</button>
+  </nav>
+
+  <div class="container">
+    <div class="table-controls">
+      <button class="btn" onclick="openUserModal()">Novo Cadastro</button>
+      <div>
+        <button class="btn" onclick="changePage('prev')">Anterior</button>
+        <button class="btn" onclick="changePage('next')">Próximo</button>
+        <span id="page-info">Página 1</span>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>Data de Registro</th>
+          <th>Trabalha</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="user-table">
+        <!-- Usuários renderizados dinamicamente -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal Cadastro -->
+  <div class="modal" id="user-modal">
+    <div class="modal-header">Cadastrar Usuário</div>
+    <form id="user-modal-form">
+      <div class="form-group">
+        <label for="modal-name">Nome</label>
+        <input type="text" id="modal-name" placeholder="Digite o nome">
+      </div>
+      <div class="form-group">
+        <label for="modal-email">E-mail</label>
+        <input type="email" id="modal-email" placeholder="Digite o e-mail">
+      </div>
+      <div class="form-group">
+        <label for="modal-password">Senha</label>
+        <input type="password" id="modal-password" placeholder="Digite a senha">
+      </div>
+      <div class="form-group">
+        <label for="modal-worker">Trabalha</label>
+        <select id="modal-worker">
+          <option value="true">Sim</option>
+          <option value="false">Não</option>
+        </select>
+      </div>
+      <button type="button" class="btn" onclick="submitUserModal()">Cadastrar</button>
+      <button type="button" class="modal-close" onclick="closeUserModal()">Fechar</button>
+    </form>
+  </div>
+
+  <div class="overlay" id="overlay"></div>
+
+  <!-- Toasts -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API_URL = "https://api.exemplo.com/usuarios"; // Substitua pelo seu endpoint
+    let currentPage = 1;
+    const usersPerPage = 10;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadUsers();
+    });
+
+    // Alternar tema
+    function toggleTheme() {
+      document.body.classList.toggle('dark');
+      document.querySelector('.container').classList.toggle('dark');
+    }
+
+    // Carregar usuários da API
+    async function loadUsers() {
+      try {
+        const response = await fetch(`${API_URL}?page=${currentPage}&limit=${usersPerPage}`);
+        const data = await response.json();
+
+        renderUsers(data.users);
+        document.getElementById("page-info").textContent = `Página ${currentPage}`;
+      } catch (error) {
+        showToast("Erro ao carregar usuários.", true);
+      }
+    }
+
+    // Renderizar tabela de usuários
+    function renderUsers(users) {
+      const tbody = document.getElementById("user-table");
+      tbody.innerHTML = users
+        .map(
+          (user) => `
+        <tr>
+          <td>${user.id}</td>
+          <td>${user.name}</td>
+          <td>${user.email}</td>
+          <td>${user.registeredAt}</td>
+          <td>${user.worker ? "Sim" : "Não"}</td>
+          <td>
+            <button class="btn" onclick="openEditModal(${user.id})">Editar</button>
+            <button class="btn red" onclick="deleteUser(${user.id})">Deletar</button>
+          </td>
+        </tr>
+      `
+        )
+        .join("");
+    }
+
+    // Paginação
+    function changePage(direction) {
+      if (direction === "next") currentPage++;
+      else if (direction === "prev" && currentPage > 1) currentPage--;
+
+      loadUsers();
+    }
+
+    // Modal Cadastro
+    function openUserModal() {
+      document.getElementById('user-modal').classList.add('active');
+      document.getElementById('overlay').classList.add('active');
+    }
+
+    function closeUserModal() {
+      document.getElementById('user-modal').classList.remove('active');
+      document.getElementById('overlay').classList.remove('active');
+    }
+
+    async function submitUserModal() {
+      const name = document.getElementById("modal-name").value;
+      const email = document.getElementById("modal-email").value;
+      const password = document.getElementById("modal-password").value;
+      const worker = document.getElementById("modal-worker").value;
+
+      try {
+        await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password, worker }),
+        });
+        showToast("Usuário cadastrado com sucesso!");
+        closeUserModal();
+        loadUsers();
+      } catch (error) {
+        showToast("Erro ao cadastrar usuário.", true);
+      }
+    }
+
+    // Editar usuário
+    async function openEditModal(userId) {
+      try {
+        const response = await fetch(`${API_URL}/${userId}`);
+        const user = await response.json();
+
+        document.getElementById("modal-name").value = user.name;
+        document.getElementById("modal-email").value = user.email;
+        document.getElementById("modal-worker").value = user.worker;
+
+        openUserModal();
+
+        document.querySelector(".btn").onclick = async () => {
+          await fetch(`${API_URL}/${userId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: document.getElementById("modal-name").value,
+              email: document.getElementById("modal-email").value,
+              worker: document.getElementById("modal-worker").value,
+            }),
+          });
+          showToast("Usuário editado com sucesso!");
+          closeUserModal();
+          loadUsers();
+        };
+      } catch (error) {
+        showToast("Erro ao carregar dados do usuário.", true);
+      }
+    }
+
+    // Deletar usuário
+    async function deleteUser(userId) {
+      if (confirm("Tem certeza de que deseja excluir este usuário?")) {
+        try {
+          await fetch(`${API_URL}/${userId}`, { method: "DELETE" });
+          showToast("Usuário excluído com sucesso!");
+          loadUsers();
+        } catch (error) {
+          showToast("Erro ao excluir usuário.", true);
+        }
+      }
+    }
+
+    // Mostrar toast
+    function showToast(message, isError = false) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.className = `toast ${isError ? "error" : ""} active`;
+      setTimeout(() => (toast.className = "toast"), 3000);
+    }
+  </script>
+</body>
+</html>
