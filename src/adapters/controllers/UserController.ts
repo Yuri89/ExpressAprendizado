@@ -7,52 +7,68 @@ let users = UsersRepository;
 
 export class UserController {
     // Listar todos os usuários
-    static getAllUsers(req: Request, res: Response): void {
-        res.status(200).json(users);
+    static getAllUsers(req: Request, res: Response): any {
+
+        try {
+            const page = parseInt(req.query.page as string) || 1;
+            const limit = parseInt(req.query.limit as string) || 10;
+            const startIndex = (page - 1) * limit;
+            const endIndex = page * limit;
+
+            const paginatedUsers = users.slice(startIndex, endIndex);
+            res.status(200).json(paginatedUsers);
+        } catch (error) {
+            res.status(500).json({ error: "Erro ao buscar usuários" });
+        }
     }
 
     // Buscar um usuário pelo ID
-    static getUserById(req: Request, res: Response): void {
+    static getUserById(req: Request, res: Response): any {
         const id = parseInt(req.params.id);
         const user = users.find((u: { getId: () => number; }) => u.getId() === id);
 
         if (!user) {
-            res.status(404).json({ message: 'Usuário não encontrado.' });
+            return res.status(404).json({ message: 'Usuário não encontrado.' });
         }
 
         res.status(200).json(user);
     }
 
     // Criar um novo usuário
-    static createUser(req: Request, res: Response): void {
-        const { nome, email, register, worker } = req.body;
+    static createUser(req: Request, res: Response): any {
+        try {
+            const { nome, email, register, worker } = req.body;
 
-        // Validação simples
-        if (!nome || !email || typeof worker !== 'boolean') {
-             res.status(400).json({ message: 'Dados inválidos.' });
+            // Validação simples
+            if (!nome || !email || typeof worker !== 'boolean') {
+                return res.status(400).json({ message: 'Dados inválidos.' });
+            }
+
+            const newUser = new UserModel(
+                users.length + 1, // Gera um novo ID
+                nome,
+                email,
+                new Date(register || Date.now()),
+                worker
+            );
+
+            users.push(newUser);
+            res.status(201).json(newUser);
+            console.log(users);
         }
-
-        const newUser = new UserModel(
-            users.length + 1, // Gera um novo ID
-            nome,
-            email,
-            new Date(register || Date.now()),
-            worker
-        );
-
-        users.push(newUser);
-        res.status(201).json(newUser);
+        catch (error) {
+            console.log(error);
+            res.status(500).json({ error: "Erro ao criar usuário" });
+        }
     }
-
-    // Atualizar um usuário existente
-    static updateUser(req: Request, res: Response): void {
+    static updateUser(req: Request, res: Response): any {
         const id = parseInt(req.params.id);
         const { nome, email, worker } = req.body;
 
         const user = users.find((u: { getId: () => number; }) => u.getId() === id);
 
         if (!user) {
-            res.status(404).json({ message: 'Usuário não encontrado.' });
+            return res.status(404).json({ message: 'Usuário não encontrado.' });
         }
 
         // Atualiza os dados somente se forem enviados
@@ -63,17 +79,16 @@ export class UserController {
         res.status(200).json({ message: 'Usuário atualizado com sucesso.', user });
     }
 
-    // Deletar um usuário pelo ID
-    static deleteUser(req: Request, res: Response): void {
+    static deleteUser(req: Request, res: Response): any {
         const id = parseInt(req.params.id);
 
         const index = users.findIndex((u: { getId: () => number; }) => u.getId() === id);
 
         if (index === -1) {
-            res.status(404).json({ message: 'Usuário não encontrado.' });
+            return res.status(404).json({ message: 'Usuário não encontrado.' });
         }
 
         users.splice(index, 1);
-        res.status(200).json({ message: 'Usuário deletado com sucesso.' });
+        return res.status(200).json({ message: 'Usuário deletado com sucesso.' });
     }
 }
